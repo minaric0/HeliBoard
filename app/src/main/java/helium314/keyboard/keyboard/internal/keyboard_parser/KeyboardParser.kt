@@ -161,6 +161,14 @@ class KeyboardParser(private val params: KeyboardParams, private val context: Co
             val varWidthKeys = mutableListOf<KeyParams>()
             var totalWidth = 0f
             val allKeys = (functionalKeysLeft + keys + functionalKeysRight)
+            // The built-in 단모음 layout is an eight-column grid. Fit its standard
+            // Shift/Delete keys to that grid too so all 22 letters have equal width.
+            if (params.mId.element.isAlphabet && params.mId.subtype.mainLayoutName == "korean_single_vowel"
+                && allKeys.size == 8 && keys.isNotEmpty()
+                && keys.all { it.mWidth == -1f && it.mCode in 0x3131..0x3163 }
+                && (functionalKeysLeft + functionalKeysRight).all { it.mCode == KeyCode.SHIFT || it.mCode == KeyCode.DELETE }) {
+                allKeys.forEach { it.mWidth = 1f / 8 }
+            }
             allKeys.forEach {
                 if (it.mWidth == -1f) varWidthKeys.add(it)
                 else totalWidth += it.mWidth

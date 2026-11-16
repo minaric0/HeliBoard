@@ -17,6 +17,14 @@ These changes were produced with AI assistance for this personal fork and have n
 - An immediate backspace after a conversion restores its first tap.
 - Editing inside an existing Korean word starts composition at the editor caret instead of appending at its end.
 - Physical keyboards retain standard Korean two-set mapping; touch double-tap timing does not apply to them.
+- The standard single-vowel keyboard fills an eight-column grid. All 22 Korean letters
+  have equal width; third-row Shift and Delete fit that grid. Number-row and shift states
+  retain the same letter widths.
+- Reopening an existing word preserves literal jamo. Replayed text is explicitly marked
+  and cannot form a new double tap, even when key coordinates are supplied.
+- Supplementary Unicode characters remain intact when typing and deleting.
+- Double-tap checkpoints retain the completed-prefix length and only a short undo suffix,
+  avoiding full-word copies on each eligible tap.
 
 | Base | Double tap |
 |---|---|
@@ -34,7 +42,7 @@ The main rows are:
 ## Android build
 
 - Package: `io.github.minaric0.heliboard` (can coexist with upstream).
-- Version: `4.3-beta2-danmoeum.1`, code `4302`.
+- Version: `4.3-beta2-danmoeum.2`, code `4303`.
 - Compile and target SDK: 37 (Android 17). Minimum API remains 21.
 - The personal release uses `-PpersonalAbis=arm64-v8a` for Samsung SM-A175N.
 - R8 release optimization remains enabled; the native dictionary library uses NDK r28.
@@ -54,3 +62,16 @@ and increase the version code for each release.
 The accompanying build report records the exact checks and their results. Physical Samsung
 One UI behavior must be assessed on the actual handset; a compiled APK or JVM test does not
 establish device compatibility by itself.
+
+The stability checks include all 11,172 modern Hangul syllables using the available
+single-vowel keys, Unicode normalization with direct jamo, every final-consonant split,
+and one-step backspace across the complete syllable set. They also cover 5,000-syllable
+composition, all 11 timed mappings, restored literal text, cursor editing, selection,
+paste, emoji and supplementary text, language switching, and six common editor types.
+Geometry checks cover five screen widths, four alphabet shift states, and number row
+enabled/disabled. The test input connection returns the suffix before the caret, as
+Android requires; the touch fixture uses each key's width for x and height for y.
+
+The application regression command excludes the separate external documentation-link
+tests (`XLinkTest`); existing upstream translation lint errors and asynchronous test-runner
+diagnostics are recorded in the release report rather than treated as fixed defects.

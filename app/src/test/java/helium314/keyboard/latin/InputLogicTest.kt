@@ -30,6 +30,7 @@ import helium314.keyboard.latin.suggestions.SuggestedWords
 import helium314.keyboard.latin.suggestions.SuggestedWordInfo
 import helium314.keyboard.latin.utils.ScriptUtils
 import helium314.keyboard.latin.utils.SubtypeSettings
+import helium314.keyboard.latin.utils.SubtypeUtilsAdditional
 import helium314.keyboard.latin.utils.getTimestampFormatter
 import helium314.keyboard.latin.utils.prefs
 import org.junit.runner.RunWith
@@ -208,6 +209,33 @@ class InputLogicTest {
         assertEquals("갸.\uD83E\uDD70", text)
     }
 
+    @Test fun singleVowelEmojiWithoutSeparatorKeepsTextOrder() {
+        selectSingleVowel()
+        singleVowelInput("ㄱㅏ")
+        input(0x1F970)
+        singleVowelInput("ㄴㅏ")
+        assertEquals("가\uD83E\uDD70나", text)
+    }
+
+    @Test fun singleVowelSupplementaryTextIsNotTruncated() {
+        selectSingleVowel()
+        singleVowelInput("ㄱㅏ")
+        input(0x20BB7)
+        assertEquals("가\uD842\uDFB7", text)
+        functionalKeyPress(KeyCode.DELETE)
+        assertEquals("가", text)
+    }
+
+    @Test fun singleVowelLanguageSwitchClearsTapCandidate() {
+        selectSingleVowel()
+        singleVowelInput("ㅏ")
+        latinIME.switchToSubtype(SubtypeUtilsAdditional.createEmojiCapableAdditionalSubtype(Locale.ENGLISH, "qwerty", true))
+        chainInput("a")
+        selectSingleVowel()
+        singleVowelInput("ㅏ")
+        assertEquals("ㅏaㅏ", text)
+    }
+
     @Test fun insertSingleVowelJamoInExistingWord() {
         selectSingleVowel()
         singleVowelInput("ㅛㅎㄹㅎㅕㅛ")
@@ -249,6 +277,48 @@ class InputLogicTest {
         setText("ㅏ")
         singleVowelInput("ㅏ")
         assertEquals("ㅏㅏ", text)
+    }
+
+    @Test fun singleVowelKeepsRestoredLiteralJamoWhileEditing() {
+        selectSingleVowel()
+        setText("ㄱㅏㅏ")
+        setCursorPosition(1)
+        setCursorPosition(3)
+        singleVowelInput("ㅏ")
+        assertEquals("ㄱㅏㅏㅏ", text)
+        assertEquals(4, cursor)
+    }
+
+    @Test fun singleVowelCompositionInCommonTextFieldTypes() {
+        val originalInputType = currentInputType
+        try {
+            listOf(InputType.TYPE_CLASS_TEXT,
+                InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_FLAG_MULTI_LINE,
+                InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS,
+                InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS,
+                InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_URI,
+                InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD).forEach { type ->
+                currentInputType = type
+                setText("")
+                selectSingleVowel()
+                singleVowelInput("ㄱㅏㅏㄱㄱㅏ")
+                assertEquals("갸까", text, "inputType=$type")
+                assertEquals("갸까", composer.typedWord, "live composer inputType=$type")
+                functionalKeyPress(KeyCode.DELETE)
+                assertEquals("갸ㄲ", text, "backspace inputType=$type")
+            }
+        } finally {
+            currentInputType = originalInputType
+        }
+    }
+
+    @Test fun singleVowelPasteDoesNotMergeWithPendingTap() {
+        selectSingleVowel()
+        singleVowelInput("ㅏ")
+        latinIME.mKeyboardActionListener.onTextInput("ㅏㅏ")
+        handleMessages()
+        singleVowelInput("ㅏ")
+        assertEquals("ㅏㅏㅏㅏ", text)
     }
 
     @Test fun emojiHangul() {

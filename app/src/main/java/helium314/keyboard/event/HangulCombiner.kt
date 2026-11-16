@@ -18,16 +18,18 @@ class HangulCombiner(
     val history: MutableList<HangulSyllable> = mutableListOf()
     private val syllable: HangulSyllable? get() = history.lastOrNull()
 
-    private data class Snapshot(val word: String, val history: List<HangulSyllable>)
+    // Processing a jamo only appends to the completed prefix. Keep its length instead
+    // of copying the whole word on every candidate tap, even in a long text run.
+    private data class Snapshot(val wordLength: Int, val history: List<HangulSyllable>)
     private data class Tap(val codePoint: Int, val time: Long, val before: Snapshot)
+    private data class DoubleTapUndo(val wordStart: Int, val suffix: String, val afterFirst: Snapshot)
     private var lastTap: Tap? = null
-    private var doubleTapUndo: Snapshot? = null
+    private var doubleTapUndo: DoubleTapUndo? = null
 
-    private fun snapshot() = Snapshot(composingWord.toString(), history.toList())
+    private fun snapshot() = Snapshot(composingWord.length, history.toList())
 
     private fun restore(snapshot: Snapshot) {
-        composingWord.setLength(0)
-        composingWord.append(snapshot.word)
+        composingWord.setLength(snapshot.wordLength)
         history.clear()
         history.addAll(snapshot.history)
     }
@@ -46,7 +48,8 @@ class HangulCombiner(
         val previous = lastTap
         if (previous != null && previous.codePoint == event.codePoint
             && now - previous.time in 0L..timeout.coerceIn(200, 800).toLong()) {
-            doubleTapUndo = snapshot()
+            doubleTapUndo = DoubleTapUndo(previous.before.wordLength,
+                composingWord.substring(previous.before.wordLength), snapshot())
             restore(previous.before)
             lastTap = null
             return Event.createSoftwareKeypressEvent(combined, event.keyCode, event.metaState, event.x, event.y, false)
@@ -56,8 +59,21 @@ class HangulCombiner(
     }
 
     override fun processEvent(previousEvents: ArrayList<Event>?, event: Event): Event {
+        if (singleVowelTimeout != null && event.isAlreadyTyped) {
+            // Resuming a word must preserve its literal text, including uncombined jamo.
+            // Coordinates supplied for suggestions are not evidence of a fresh tap.
+            lastTap = null
+            doubleTapUndo = null
+            composingWord.append(syllable?.string ?: "")
+            history.clear()
+            composingWord.appendCodePoint(event.codePoint)
+            return Event.createConsumedEvent(event)
+        }
         if (singleVowelTimeout != null && event.keyCode == KeyCode.DELETE && doubleTapUndo != null) {
-            restore(doubleTapUndo!!)
+            val undo = doubleTapUndo!!
+            composingWord.setLength(undo.wordStart)
+            composingWord.append(undo.suffix)
+            restore(undo.afterFirst)
             doubleTapUndo = null
             lastTap = null
             return Event.createConsumedEvent(event)
@@ -82,7 +98,8 @@ class HangulCombiner(
                         Event.createConsumedEvent(event)
                     }
                     composingWord.isNotEmpty() -> {
-                        composingWord.deleteCharAt(composingWord.lastIndex)
+                        val end = composingWord.length
+                        composingWord.delete(end - Character.charCount(composingWord.codePointBefore(end)), end)
                         Event.createConsumedEvent(event)
                     }
                     else -> event
@@ -241,7 +258,7 @@ class HangulCombiner(
     sealed class HangulJamo {
         abstract val codePoint: Int
         abstract val modern: Boolean
-        val string: String get() = codePoint.toChar().toString()
+        val string: String get() = String(Character.toChars(codePoint))
         data class NonHangul(override val codePoint: Int) : HangulJamo() {
             override val modern: Boolean get() = false
         }

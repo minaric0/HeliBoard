@@ -2,6 +2,7 @@
 package helium314.keyboard.event
 
 import helium314.keyboard.keyboard.internal.keyboard_parser.floris.KeyCode
+import java.text.Normalizer
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -208,5 +209,58 @@ class HangulSingleVowelTest {
         type("ㅇㅏㄴㄴㅕㅇㅎㅏㅅㅔㅇㅛ")
         assertEquals("안녕하세요", text())
         assertTrue(combiner.history.isNotEmpty())
+    }
+
+    @Test fun everyModernSyllableMatchesUnicodeNormalization() {
+        val initials = "ㄱㄲㄴㄷㄸㄹㅁㅂㅃㅅㅆㅇㅈㅉㅊㅋㅌㅍㅎ"
+        val vowels = "ㅏㅐㅑㅒㅓㅔㅕㅖㅗㅘㅙㅚㅛㅜㅝㅞㅟㅠㅡㅢㅣ"
+        val finals = "ㄱㄲㄳㄴㄵㄶㄷㄹㄺㄻㄼㄽㄾㄿㅀㅁㅂㅄㅅㅆㅇㅈㅊㅋㅌㅍㅎ"
+        for (expected in '가'..'힣') {
+            combiner.reset()
+            Normalizer.normalize(expected.toString(), Normalizer.Form.NFD).forEach { jamo ->
+                tap(when (jamo.code) {
+                    in 0x1100..0x1112 -> initials[jamo.code - 0x1100]
+                    in 0x1161..0x1175 -> vowels[jamo.code - 0x1161]
+                    else -> finals[jamo.code - 0x11a8]
+                })
+            }
+            assertEquals(expected.toString(), text(), "Unicode syllable $expected")
+        }
+    }
+
+    @Test fun everyCompoundFinalSplitsAndDeletes() {
+        listOf("ㄱㅅ" to "각사", "ㄴㅈ" to "간자", "ㄴㅎ" to "간하", "ㄹㄱ" to "갈가",
+            "ㄹㅁ" to "갈마", "ㄹㅂ" to "갈바", "ㄹㅅ" to "갈사", "ㄹㅌ" to "갈타",
+            "ㄹㅍ" to "갈파", "ㄹㅎ" to "갈하", "ㅂㅅ" to "갑사").forEach { (final, expected) ->
+            combiner.reset()
+            type("ㄱㅏ${final}ㅏ")
+            assertEquals(expected, text())
+            delete()
+            assertEquals(expected.take(1) + final.last(), text())
+            delete()
+            assertEquals(expected.take(1), text())
+        }
+    }
+
+    @Test fun doubleTapUndoRestoresEveryCompositionContext() {
+        listOf("", "ㄱㅏ", "ㄱㅏㄱ", "ㄱㅗ", "ㄱㅜ", "ㄱㅏㄹ", "ㅁㅏㄴㅏㄷㅏㄱㅗ").forEach { prefix ->
+            mappings.forEach { (base, _) ->
+                combiner.reset()
+                type(prefix)
+                tap(base, 1_000)
+                val firstTap = text()
+                tap(base)
+                delete()
+                assertEquals(firstTap, text(), "Undo $prefix + $base$base")
+            }
+        }
+    }
+
+    @Test fun supplementaryTextSurvivesCompositionAndDeletion() {
+        type("ㄱㅏ")
+        combiner.processEvent(null, Event.createSoftwareKeypressEvent(0x20BB7, 0, 0, 50, 100, false))
+        assertEquals("가\uD842\uDFB7", text())
+        delete()
+        assertEquals("가", text())
     }
 }
