@@ -457,6 +457,16 @@ f""", // no newline at the end
         val (_, rows) = buildKeyboard(EditorInfo(), subtype, KeyboardElement.ALPHABET)
         val jamoRows = rows.take(3).map { row -> row.filter { it.mCode in 0x3131..0x3163 }.map { it.mCode.toChar() }.joinToString("") }
         assertEquals(listOf("ㅂㅈㄷㄱㅅㅗㅐㅔ", "ㅁㄴㅇㄹㅎㅓㅏㅣ", "ㅋㅌㅊㅍㅜㅡ"), jamoRows)
+        rows.take(3).forEachIndexed { index, row ->
+            assertTrue(row.none { it.isSpacer }, "Korean row ${index + 1} must fill its available width")
+            assertEquals(1f, row.sumOf { it.mWidth.toDouble() }.toFloat(), 0.0001f)
+            val letters = row.filter { it.mCode in 0x3131..0x3163 }
+            letters.forEach { assertEquals(letters.first().mWidth, it.mWidth, 0.0001f) }
+            // Check the positioned keys too, including rounding at the screen edges.
+            row.zipWithNext().forEach { (left, right) ->
+                assertEquals(left.xPos + left.mAbsoluteWidth, right.xPos, 0.01f)
+            }
+        }
         val allKeys = rows.flatten()
         listOf('ㅂ' to 'ㅃ', 'ㅈ' to 'ㅉ', 'ㄷ' to 'ㄸ', 'ㄱ' to 'ㄲ', 'ㅅ' to 'ㅆ',
             'ㅗ' to 'ㅛ', 'ㅓ' to 'ㅕ', 'ㅏ' to 'ㅑ', 'ㅜ' to 'ㅠ', 'ㅐ' to 'ㅒ', 'ㅔ' to 'ㅖ').forEach { (base, popup) ->
@@ -476,6 +486,31 @@ f""", // no newline at the end
             val (_, rows) = buildKeyboard(editor, subtype, KeyboardElement.ALPHABET)
             assertEquals(KeyCode.LANGUAGE_SWITCH, rows.last()[1].mCode)
             assertEquals('@'.code, rows.last()[2].mCode)
+        }
+    }
+
+    @Test fun singleVowelRowsFillWidthAcrossScreenSizesAndShiftStates() {
+        val subtype = SubtypeSettings.getResourceSubtypesForLocale("ko".constructLocale())
+            .first { it.getExtraValueOf("KeyboardLayoutSet") == "MAIN:korean_single_vowel" }
+        listOf(320, 500, 720, 1080, 1600).forEach { width ->
+            listOf(false, true).forEach { numberRow ->
+                KeyboardElement.entries.filter { it.isAlphabet }.forEach { element ->
+                    val (_, rows) = buildKeyboard(EditorInfo(), subtype, element, width, numberRow)
+                    val letterRows = rows.filter { row -> row.any { it.mCode in 0x3131..0x3163 } }
+                    assertEquals(3, letterRows.size)
+                    val leftEdge = rows.last().first().xPos
+                    val rightEdge = rows.last().last().let { it.xPos + it.mAbsoluteWidth }
+                    val letterWidth = letterRows.first().first().mAbsoluteWidth
+                    letterRows.forEach { row ->
+                        assertTrue(row.none { it.isSpacer }, "width=$width, element=$element, numberRow=$numberRow")
+                        assertEquals(1f, row.sumOf { it.mWidth.toDouble() }.toFloat(), 0.0001f)
+                        assertEquals(leftEdge, row.first().xPos, 0.01f)
+                        assertEquals(rightEdge, row.last().let { it.xPos + it.mAbsoluteWidth }, 0.01f)
+                        val letters = row.filter { it.mCode in 0x3131..0x3163 }
+                        letters.forEach { assertEquals(letterWidth, it.mAbsoluteWidth, 0.01f) }
+                    }
+                }
+            }
         }
     }
 
@@ -620,20 +655,23 @@ f""", // no newline at the end
         }
     }
 
-    private fun buildKeyboard(editorInfo: EditorInfo, subtype: InputMethodSubtype, element: KeyboardElement): Pair<Keyboard, List<List<KeyParams>>> {
+    private fun buildKeyboard(editorInfo: EditorInfo, subtype: InputMethodSubtype, element: KeyboardElement,
+        keyboardWidth: Int = 500, numberRow: Boolean = false): Pair<Keyboard, List<List<KeyParams>>> {
         val layoutParams = KeyboardLayoutSet.Params()
         val editorInfoField = KeyboardLayoutSet.Params::class.java.getDeclaredField("editorInfo").apply { isAccessible = true }
         editorInfoField.set(layoutParams, editorInfo)
         val subtypeField = KeyboardLayoutSet.Params::class.java.getDeclaredField("subtype").apply { isAccessible = true }
         subtypeField.set(layoutParams, RichInputMethodSubtype.get(subtype))
         val widthField = KeyboardLayoutSet.Params::class.java.getDeclaredField("keyboardWidth").apply { isAccessible = true }
-        widthField.setInt(layoutParams, 500)
+        widthField.setInt(layoutParams, keyboardWidth)
         val heightField = KeyboardLayoutSet.Params::class.java.getDeclaredField("keyboardHeight").apply { isAccessible = true }
         heightField.setInt(layoutParams, 300)
 
         val keysInRowsField = KeyboardBuilder::class.java.getDeclaredField("keysInRows").apply { isAccessible = true }
 
-        val id = KeyboardId(element, layoutParams)
+        val id = KeyboardId(element, layoutParams).let { id ->
+            if (numberRow) id.copy(numberRowEnabled = true).apply { this.editorInfo = editorInfo } else id
+        }
         val builder = KeyboardBuilder(latinIME, KeyboardParams(UniqueKeysCache.NO_CACHE))
         builder.load(id)
         @Suppress("UNCHECKED_CAST")

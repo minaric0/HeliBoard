@@ -16,8 +16,8 @@ android {
         applicationId = "io.github.minaric0.heliboard"
         minSdk = 21
         targetSdk = 37
-        versionCode = 4302
-        versionName = "4.3-beta2-danmoeum.1"
+        versionCode = 4303
+        versionName = "4.3-beta2-danmoeum.2"
         ndk {
             abiFilters.clear()
             abiFilters.addAll(providers.gradleProperty("personalAbis").orNull?.split(",")

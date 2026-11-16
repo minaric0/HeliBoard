@@ -76,6 +76,9 @@ class Event private constructor(
 
     val isCombining: Boolean get() = 0 != FLAG_COMBINING and flags
 
+    // Replayed editor text can carry key coordinates, but it is not a new touch.
+    val isAlreadyTyped: Boolean get() = 0 != FLAG_ALREADY_TYPED and flags
+
     val isGesture: Boolean get() = EventType.GESTURE == eventType
 
     // Returns whether this is a fake key press from the suggestion strip. This happens with
@@ -138,6 +141,7 @@ class Event private constructor(
         private const val FLAG_CONSUMED = 0x4
         // This event is a combining character, usually a hangul input.
         private const val FLAG_COMBINING = 0x8
+        private const val FLAG_ALREADY_TYPED = 0x10
 
         @JvmStatic
         fun createSoftwareKeypressEvent(codePoint: Int, keyCode: Int, metaState: Int, x: Int, y: Int, isKeyRepeat: Boolean) =
@@ -221,7 +225,8 @@ class Event private constructor(
         @JvmStatic
         // TODO: should we have a different type of event for this? After all, it's not a key press.
         fun createEventForCodePointFromAlreadyTypedText(codePoint: Int, x: Int, y: Int) =
-            Event(eventType = EventType.INPUT_KEYPRESS, codePoint = codePoint, x = x, y = y)
+            Event(eventType = EventType.INPUT_KEYPRESS, codePoint = codePoint, x = x, y = y,
+                flags = FLAG_ALREADY_TYPED)
 
         /**
          * Creates an input event representing the manual pick of a suggestion.

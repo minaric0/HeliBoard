@@ -157,6 +157,15 @@ class KeyboardParser(private val params: KeyboardParams, private val context: Co
         // expand width = -1 keys and make sure rows fit on screen, insert spacers if necessary
         bassKeyParams.forEachIndexed { i, keys ->
             val (functionalKeysLeft, functionalKeysRight) = functionalKeys[i]
+            // 단모음 uses eight equal columns, including Shift and Delete on its
+            // six-letter row. The usual 15% functional keys would narrow that row.
+            if (params.mId.element.isAlphabet && params.mId.subtype.mainLayoutName == "korean_single_vowel"
+                && keys.size == 6 && keys.all { it.mCode in 0x3131..0x3163 }
+                && functionalKeysLeft.singleOrNull()?.mCode == KeyCode.SHIFT
+                && functionalKeysRight.singleOrNull()?.mCode == KeyCode.DELETE) {
+                functionalKeysLeft.single().mWidth = 0.125f
+                functionalKeysRight.single().mWidth = 0.125f
+            }
             // sum up width, excluding -1 elements (put those in a separate list)
             val varWidthKeys = mutableListOf<KeyParams>()
             var totalWidth = 0f
