@@ -9,6 +9,7 @@ package helium314.keyboard.event
 import android.text.SpannableStringBuilder
 import android.text.TextUtils
 import helium314.keyboard.keyboard.internal.keyboard_parser.floris.KeyCode
+import helium314.keyboard.latin.settings.Settings
 import java.util.*
 
 /**
@@ -41,6 +42,11 @@ class CombinerChain(initialText: String, combiningSpec: String) {
         mCombiners.add(DeadKeyCombiner())
         if (combiningSpec == "hangul")
             mCombiners.add(HangulCombiner())
+        else if (combiningSpec == "hangul_single_vowel")
+            mCombiners.add(HangulCombiner(singleVowelTimeout = {
+                val settings = Settings.getValues()
+                if (settings.mKoreanSingleVowelDoubleTap) settings.mKoreanSingleVowelDoubleTapTimeout else 0
+            }))
         else if (combiningSpec == "bn_khipro")
             mCombiners.add(BnKhiproCombiner())
     }

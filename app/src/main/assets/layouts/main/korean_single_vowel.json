@@ -1,0 +1,129 @@
+[
+  [
+    {
+      "label": "ㅂ",
+      "popup": {
+        "main": {
+          "label": "ㅃ"
+        }
+      }
+    },
+    {
+      "label": "ㅈ",
+      "popup": {
+        "main": {
+          "label": "ㅉ"
+        }
+      }
+    },
+    {
+      "label": "ㄷ",
+      "popup": {
+        "main": {
+          "label": "ㄸ"
+        }
+      }
+    },
+    {
+      "label": "ㄱ",
+      "popup": {
+        "main": {
+          "label": "ㄲ"
+        }
+      }
+    },
+    {
+      "label": "ㅅ",
+      "popup": {
+        "main": {
+          "label": "ㅆ"
+        }
+      }
+    },
+    {
+      "label": "ㅗ",
+      "popup": {
+        "main": {
+          "label": "ㅛ"
+        }
+      }
+    },
+    {
+      "label": "ㅐ",
+      "popup": {
+        "main": {
+          "label": "ㅒ"
+        }
+      }
+    },
+    {
+      "label": "ㅔ",
+      "popup": {
+        "main": {
+          "label": "ㅖ"
+        }
+      }
+    }
+  ],
+  [
+    {
+      "label": "ㅁ"
+    },
+    {
+      "label": "ㄴ"
+    },
+    {
+      "label": "ㅇ"
+    },
+    {
+      "label": "ㄹ"
+    },
+    {
+      "label": "ㅎ"
+    },
+    {
+      "label": "ㅓ",
+      "popup": {
+        "main": {
+          "label": "ㅕ"
+        }
+      }
+    },
+    {
+      "label": "ㅏ",
+      "popup": {
+        "main": {
+          "label": "ㅑ"
+        }
+      }
+    },
+    {
+      "label": "ㅣ"
+    }
+  ],
+  [
+    {
+      "label": "ㅋ"
+    },
+    {
+      "label": "ㅌ"
+    },
+    {
+      "label": "ㅊ"
+    },
+    {
+      "label": "ㅍ"
+    },
+    {
+      "label": "ㅜ",
+      "popup": {
+        "main": {
+          "label": "ㅠ"
+        }
+      }
+    },
+    {
+      "label": "ㅡ"
+    }
+  ]
+]

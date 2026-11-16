@@ -1,4 +1,5 @@
 import com.android.build.api.variant.ApplicationVariant
+import org.gradle.api.tasks.testing.Test
 
 plugins {
     id("com.android.application")
@@ -6,18 +7,21 @@ plugins {
     kotlin("plugin.compose") version "2.4.0"
 }
 
+val mockitoAgent by configurations.creating
+
 android {
     compileSdk = 37
 
     defaultConfig {
-        applicationId = "helium314.keyboard"
+        applicationId = "io.github.minaric0.heliboard"
         minSdk = 21
         targetSdk = 37
-        versionCode = 4301
-        versionName = "4.3-beta2"
+        versionCode = 4302
+        versionName = "4.3-beta2-danmoeum.1"
         ndk {
             abiFilters.clear()
-            abiFilters.addAll(listOf("armeabi-v7a", "arm64-v8a", "x86", "x86_64"))
+            abiFilters.addAll(providers.gradleProperty("personalAbis").orNull?.split(",")
+                ?: listOf("armeabi-v7a", "arm64-v8a", "x86", "x86_64"))
         }
         proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
     }
@@ -78,6 +82,10 @@ android {
         compose = true
     }
 
+    androidComponents.beforeVariants(androidComponents.selector().withBuildType("runTests")) {
+        (it as com.android.build.api.variant.HasUnitTestBuilder).enableUnitTest = true
+    }
+
     externalNativeBuild {
         ndkBuild {
             path = File("src/main/jni/Android.mk")
@@ -116,6 +124,7 @@ android {
 }
 
 dependencies {
+    mockitoAgent("org.mockito:mockito-core:5.23.0") { isTransitive = false }
     // androidx
     implementation("androidx.core:core-ktx:1.17.0") // 1.18.0 requires minSdk 23
     implementation("androidx.recyclerview:recyclerview:1.4.0")
@@ -144,4 +153,9 @@ dependencies {
     testImplementation("org.robolectric:robolectric:4.16.1")
     testImplementation("androidx.test:runner:1.7.0")
     testImplementation("androidx.test:core:1.7.0")
+}
+
+tasks.withType<Test>().configureEach {
+    // JDK 21+ requires Mockito instrumentation at startup instead of self-attachment.
+    jvmArgs("-javaagent:${mockitoAgent.asPath}")
 }

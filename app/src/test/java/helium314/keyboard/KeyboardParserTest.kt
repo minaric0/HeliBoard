@@ -3,6 +3,7 @@ package helium314.keyboard
 
 import android.view.inputmethod.EditorInfo
 import android.view.inputmethod.InputMethodSubtype
+import android.view.View
 import com.android.inputmethod.keyboard.ProximityInfo
 import helium314.keyboard.keyboard.Key
 import helium314.keyboard.keyboard.Key.KeyParams
@@ -20,6 +21,10 @@ import helium314.keyboard.keyboard.internal.keyboard_parser.LayoutParser
 import helium314.keyboard.keyboard.internal.keyboard_parser.LocaleKeyboardInfos
 import helium314.keyboard.keyboard.internal.keyboard_parser.floris.KeyCode
 import helium314.keyboard.latin.LatinIME
+import helium314.keyboard.latin.R
+import helium314.keyboard.latin.common.LocaleUtils.constructLocale
+import helium314.keyboard.latin.suggestions.SuggestionStripView
+import helium314.keyboard.latin.utils.SubtypeSettings
 import helium314.keyboard.latin.RichInputMethodSubtype
 import helium314.keyboard.latin.utils.LayoutUtilsCustom
 import helium314.keyboard.latin.utils.POPUP_KEYS_LAYOUT
@@ -444,6 +449,42 @@ f""", // no newline at the end
     } }]]""").flatMap { row -> row.mapNotNull { it.compute(params) } }.single()
         assertEquals("x", key.toKeyParams(params).mPopupKeys?.first()?.mLabel)
         assertEquals(-10001, key.toKeyParams(params).mPopupKeys?.first()?.mCode)
+    }
+
+    @Test fun builtInSingleVowelLayoutHasAllKeysAndPopups() {
+        val subtype = SubtypeSettings.getResourceSubtypesForLocale("ko".constructLocale())
+            .first { it.getExtraValueOf("KeyboardLayoutSet") == "MAIN:korean_single_vowel" }
+        val (_, rows) = buildKeyboard(EditorInfo(), subtype, KeyboardElement.ALPHABET)
+        val jamoRows = rows.take(3).map { row -> row.filter { it.mCode in 0x3131..0x3163 }.map { it.mCode.toChar() }.joinToString("") }
+        assertEquals(listOf("ㅂㅈㄷㄱㅅㅗㅐㅔ", "ㅁㄴㅇㄹㅎㅓㅏㅣ", "ㅋㅌㅊㅍㅜㅡ"), jamoRows)
+        val allKeys = rows.flatten()
+        listOf('ㅂ' to 'ㅃ', 'ㅈ' to 'ㅉ', 'ㄷ' to 'ㄸ', 'ㄱ' to 'ㄲ', 'ㅅ' to 'ㅆ',
+            'ㅗ' to 'ㅛ', 'ㅓ' to 'ㅕ', 'ㅏ' to 'ㅑ', 'ㅜ' to 'ㅠ', 'ㅐ' to 'ㅒ', 'ㅔ' to 'ㅖ').forEach { (base, popup) ->
+            assertTrue(allKeys.single { it.mCode == base.code }.mPopupKeys!!.any { it.mCode == popup.code })
+        }
+        assertEquals(KeyCode.LANGUAGE_SWITCH, rows.last()[1].mCode)
+        assertEquals('@'.code, rows.last()[2].mCode)
+        assertEquals(1, allKeys.count { it.mCode == KeyCode.LANGUAGE_SWITCH })
+    }
+
+    @Test fun englishBottomRowKeepsGlobeAndAtInTextEmailAndUriFields() {
+        val subtype = SubtypeUtilsAdditional.createEmojiCapableAdditionalSubtype(Locale.ENGLISH, "qwerty", true)
+        listOf(android.text.InputType.TYPE_CLASS_TEXT,
+            android.text.InputType.TYPE_CLASS_TEXT or android.text.InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS,
+            android.text.InputType.TYPE_CLASS_TEXT or android.text.InputType.TYPE_TEXT_VARIATION_URI).forEach { type ->
+            val editor = EditorInfo().apply { inputType = type }
+            val (_, rows) = buildKeyboard(editor, subtype, KeyboardElement.ALPHABET)
+            assertEquals(KeyCode.LANGUAGE_SWITCH, rows.last()[1].mCode)
+            assertEquals('@'.code, rows.last()[2].mCode)
+        }
+    }
+
+    @Test fun toolbarStartsExpandedAndCanBeCollapsed() {
+        val strip = SuggestionStripView(latinIME, null)
+        val toolbar = strip.findViewById<View>(R.id.toolbar_container)
+        assertEquals(View.VISIBLE, toolbar.visibility)
+        strip.setToolbarVisibility(false)
+        assertEquals(View.GONE, toolbar.visibility)
     }
 
     @Test fun canLoadKeyboard() {

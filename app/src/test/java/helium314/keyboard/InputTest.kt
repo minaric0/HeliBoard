@@ -5,6 +5,9 @@ import helium314.keyboard.keyboard.KeyboardElement
 import helium314.keyboard.keyboard.KeyboardSwitcher
 import helium314.keyboard.keyboard.internal.keyboard_parser.floris.KeyCode
 import helium314.keyboard.latin.LatinIME
+import helium314.keyboard.latin.RichInputMethodManager
+import helium314.keyboard.latin.common.LocaleUtils.constructLocale
+import helium314.keyboard.latin.utils.SubtypeSettings
 import org.junit.runner.RunWith
 import org.robolectric.Robolectric
 import org.robolectric.RobolectricTestRunner
@@ -31,6 +34,23 @@ class InputTest {
         keyboardSwitcher.onCreateInputView(latinIME, true)
         // create and set keyboard
         keyboardSwitcher.reloadMainKeyboard()
+    }
+
+    @Test fun singleVowelDoubleTapThroughTouchEvents() {
+        val originalSubtype = RichInputMethodManager.getInstance().currentSubtype.rawSubtype
+        val subtype = SubtypeSettings.getResourceSubtypesForLocale("ko".constructLocale())
+            .first { it.getExtraValueOf("KeyboardLayoutSet") == "MAIN:korean_single_vowel" }
+        try {
+            latinIME.switchToSubtype(subtype)
+            "ㄱㄱㅏ".forEachIndexed { index, char ->
+                val down = 100L + 100L * index
+                touchKey(char.code, MotionEvent.ACTION_DOWN, down)
+                touchKey(char.code, MotionEvent.ACTION_UP, down + 50L)
+            }
+            assertEquals("까", ShadowInputMethodService.text)
+        } finally {
+            latinIME.switchToSubtype(originalSubtype)
+        }
     }
 
     @Test fun pressShift() {
@@ -90,20 +110,27 @@ class InputTest {
         val key = kb.getKey(code)!!
         val x = key.x + key.height / 2
         val y = key.y + key.width / 2
+        // PointerTracker retains its last-up time between these view fixtures. Never send
+        // backwards timestamps, which would suppress a later test's valid key press as noise.
+        lastMotionTime = maxOf(lastMotionTime + 50L, eventTime)
         val me = MotionEvent.obtain( // todo: there are many more parameters, also related to pointers
             0L,
-            eventTime,
+            lastMotionTime,
             action,
             x.toFloat(),
             y.toFloat(),
             0
         )
-        keyboardSwitcher.mainKeyboardView.onTouchEvent(me)
+        requireNotNull(keyboardSwitcher.mainKeyboardView).onTouchEvent(me)
     }
 
     @BeforeTest
     fun reset() {
         keyboardSwitcher.reloadMainKeyboard()
         ShadowInputMethodService.reset()
+    }
+
+    companion object {
+        private var lastMotionTime = 0L
     }
 }

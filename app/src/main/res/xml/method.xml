@@ -665,6 +665,15 @@
         android:imeSubtypeExtraValue="KeyboardLayoutSet=MAIN:korean,CombiningRules=hangul,SupportTouchPositionCorrection,EmojiCapable"
         android:isAsciiCapable="false"
     />
+    <subtype android:icon="@drawable/ic_ime_switcher"
+        android:label="@string/subtype_generic_single_vowel"
+        android:subtypeId="0x6d61726b"
+        android:imeSubtypeLocale="ko"
+        android:languageTag="ko"
+        android:imeSubtypeMode="keyboard"
+        android:imeSubtypeExtraValue="KeyboardLayoutSet=MAIN:korean_single_vowel,CombiningRules=hangul_single_vowel,SupportTouchPositionCorrection,EmojiCapable"
+        android:isAsciiCapable="false"
+    />
 	<subtype android:icon="@drawable/ic_ime_switcher"
         android:label="@string/subtype_generic_phonetic"
         android:subtypeId="0x3f5a9c12"

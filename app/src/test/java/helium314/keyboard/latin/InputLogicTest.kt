@@ -163,6 +163,94 @@ class InputLogicTest {
         assertEquals("ㅂ갸", text)
     }
 
+    private fun selectSingleVowel() {
+        val ko = SubtypeSettings.getResourceSubtypesForLocale("ko".constructLocale())
+            .first { it.getExtraValueOf("KeyboardLayoutSet") == "MAIN:korean_single_vowel" }
+        latinIME.switchToSubtype(ko)
+    }
+
+    private fun singleVowelInput(value: String) {
+        value.forEach {
+            latinIME.mKeyboardActionListener.onCodeInput(it.code, 100, 100, false)
+            handleMessages()
+            checkConnectionConsistency()
+        }
+    }
+
+    @Test fun singleVowelCompositionThroughInputConnection() {
+        selectSingleVowel()
+        singleVowelInput("ㄱㄱㅏㅏ")
+        assertEquals("꺄", text)
+        assertEquals("꺄", composingText)
+    }
+
+    @Test fun singleVowelBackspaceThroughInputConnection() {
+        selectSingleVowel()
+        singleVowelInput("ㄱㅏㅏ")
+        functionalKeyPress(KeyCode.DELETE)
+        assertEquals("가", text)
+        functionalKeyPress(KeyCode.DELETE)
+        assertEquals("ㄱ", text)
+        functionalKeyPress(KeyCode.DELETE)
+        assertEquals("", text)
+    }
+
+    @Test fun singleVowelFinalSplitThroughInputConnection() {
+        selectSingleVowel()
+        singleVowelInput("ㄱㅏㄱㄱㅏ")
+        assertEquals("가까", text)
+    }
+
+    @Test fun singleVowelSeparatorsAndEmoji() {
+        selectSingleVowel()
+        singleVowelInput("ㄱㅏㅏ.")
+        input(0x1F970)
+        assertEquals("갸.\uD83E\uDD70", text)
+    }
+
+    @Test fun insertSingleVowelJamoInExistingWord() {
+        selectSingleVowel()
+        singleVowelInput("ㅛㅎㄹㅎㅕㅛ")
+        setCursorPosition(3)
+        singleVowelInput("ㄲ")
+        assertEquals("ㅛㅎㄹㄲ혀ㅛ", text)
+        assertEquals(4, cursor)
+    }
+
+    @Test fun singleVowelDoubleTapAtMovedCursor() {
+        selectSingleVowel()
+        singleVowelInput("ㄱㅏㄴㅏㄷㅏ")
+        setCursorPosition(1)
+        singleVowelInput("ㅅㅅㅏ")
+        assertEquals("가싸나다", text)
+        assertEquals(2, cursor)
+    }
+
+    @Test fun singleVowelDeleteInsideWord() {
+        selectSingleVowel()
+        singleVowelInput("ㄱㅏㄴㅏㄷㅏ")
+        setCursorPosition(2)
+        functionalKeyPress(KeyCode.DELETE)
+        assertEquals("가다", text)
+        assertEquals(1, cursor)
+    }
+
+    @Test fun singleVowelReplacesSelection() {
+        selectSingleVowel()
+        singleVowelInput("ㄱㅏㄴㅏㄷㅏ")
+        setCursorPosition(1, 2)
+        singleVowelInput("ㅁㅏ")
+        assertEquals("가마다", text)
+    }
+
+    @Test fun singleVowelDoesNotDoubleTapResumedTextFromAnotherField() {
+        selectSingleVowel()
+        singleVowelInput("ㅏ")
+        setText("ㅏ")
+        singleVowelInput("ㅏ")
+        assertEquals("ㅏㅏ", text)
+    }
+
     @Test fun emojiHangul() {
         val ko = SubtypeSettings.getResourceSubtypesForLocale("ko".constructLocale()).first()
         latinIME.switchToSubtype(ko)

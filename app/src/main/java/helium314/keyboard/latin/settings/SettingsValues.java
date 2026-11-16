@@ -115,6 +115,8 @@ public class SettingsValues {
     public final int mGestureTrailFadeoutDuration;
     public final boolean mSlidingKeyInputPreviewEnabled;
     public final int mKeyLongpressTimeout;
+    public final boolean mKoreanSingleVowelDoubleTap;
+    public final int mKoreanSingleVowelDoubleTapTimeout;
     public final boolean mEnableEmojiAltPhysicalKey;
     public final boolean mEnableHardwareKeyboard;
     public final boolean mIsSplitKeyboardEnabled;
@@ -252,6 +254,9 @@ public class SettingsValues {
 
         // Compute other readable settings
         mKeyLongpressTimeout = prefs.getInt(Settings.PREF_KEY_LONGPRESS_TIMEOUT, Defaults.PREF_KEY_LONGPRESS_TIMEOUT);
+        mKoreanSingleVowelDoubleTap = prefs.getBoolean(Settings.PREF_KOREAN_SINGLE_VOWEL_DOUBLE_TAP, Defaults.PREF_KOREAN_SINGLE_VOWEL_DOUBLE_TAP);
+        mKoreanSingleVowelDoubleTapTimeout = Math.max(200, Math.min(800,
+                prefs.getInt(Settings.PREF_KOREAN_SINGLE_VOWEL_DOUBLE_TAP_TIMEOUT, Defaults.PREF_KOREAN_SINGLE_VOWEL_DOUBLE_TAP_TIMEOUT)));
         mKeypressVibrationDuration = prefs.getInt(Settings.PREF_VIBRATION_DURATION_SETTINGS, Defaults.PREF_VIBRATION_DURATION_SETTINGS);
         mKeypressSoundVolume = prefs.getFloat(Settings.PREF_KEYPRESS_SOUND_VOLUME, Defaults.PREF_KEYPRESS_SOUND_VOLUME);
         mEnableEmojiAltPhysicalKey = prefs.getBoolean(Settings.PREF_ENABLE_EMOJI_ALT_PHYSICAL_KEY, Defaults.PREF_ENABLE_EMOJI_ALT_PHYSICAL_KEY);

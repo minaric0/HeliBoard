@@ -8,6 +8,10 @@
     xmlns:tools="http://schemas.android.com/tools"
     xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2"
     tools:ignore="MissingTranslation">
+    <string name="subtype_generic_single_vowel">%s (Single vowel · 단모음)</string>
+    <string name="korean_single_vowel_double_tap">Korean single-vowel double tap</string>
+    <string name="korean_single_vowel_double_tap_summary">Double tap a key for ㅑ, ㅕ, ㅛ, ㅠ, ㅒ, ㅖ or a tense consonant. Only applies to the single-vowel layout.</string>
+    <string name="korean_single_vowel_double_tap_timeout">Korean double-tap interval</string>
     <!-- Name of Android spell checker service. The app name should not be translated. -->
     <string name="spell_checker_service_name">HeliBoard Spell Checker</string>
     <!-- Title for IME settings screen. The app name should not be translated. -->

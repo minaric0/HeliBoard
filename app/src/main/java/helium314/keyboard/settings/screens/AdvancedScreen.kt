@@ -61,6 +61,9 @@ fun AdvancedSettingsScreen(
     val items = listOf(
         Settings.PREF_ALWAYS_INCOGNITO_MODE,
         Settings.PREF_KEY_LONGPRESS_TIMEOUT,
+        Settings.PREF_KOREAN_SINGLE_VOWEL_DOUBLE_TAP,
+        if (prefs.getBoolean(Settings.PREF_KOREAN_SINGLE_VOWEL_DOUBLE_TAP, Defaults.PREF_KOREAN_SINGLE_VOWEL_DOUBLE_TAP))
+            Settings.PREF_KOREAN_SINGLE_VOWEL_DOUBLE_TAP_TIMEOUT else null,
         Settings.PREF_SPACE_HORIZONTAL_SWIPE,
         Settings.PREF_SPACE_VERTICAL_SWIPE,
         if (Settings.readHorizontalSpaceSwipe(prefs) == KeyboardActionListener.SwipeAction.SWITCH_LANGUAGE
@@ -104,6 +107,20 @@ fun createAdvancedSettings(context: Context) = listOf(
         R.string.incognito, R.string.prefs_force_incognito_mode_summary)
     {
         SwitchPreference(it, Defaults.PREF_ALWAYS_INCOGNITO_MODE) { KeyboardSwitcher.getInstance().setThemeNeedsReload() }
+    },
+    Setting(context, Settings.PREF_KOREAN_SINGLE_VOWEL_DOUBLE_TAP,
+        R.string.korean_single_vowel_double_tap, R.string.korean_single_vowel_double_tap_summary) {
+        SwitchPreference(it, Defaults.PREF_KOREAN_SINGLE_VOWEL_DOUBLE_TAP)
+    },
+    Setting(context, Settings.PREF_KOREAN_SINGLE_VOWEL_DOUBLE_TAP_TIMEOUT, R.string.korean_single_vowel_double_tap_timeout) { setting ->
+        SliderPreference(
+            name = setting.title,
+            key = setting.key,
+            default = Defaults.PREF_KOREAN_SINGLE_VOWEL_DOUBLE_TAP_TIMEOUT,
+            range = 200f..800f,
+            stepSize = 25,
+            description = { stringResource(R.string.abbreviation_unit_milliseconds, it.toString()) }
+        )
     },
     Setting(context, Settings.PREF_KEY_LONGPRESS_TIMEOUT, R.string.prefs_key_longpress_timeout_settings) { setting ->
         SliderPreference(

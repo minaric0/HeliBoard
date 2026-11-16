@@ -9,6 +9,7 @@ import helium314.keyboard.latin.define.DebugFlags
 import helium314.keyboard.latin.dictionary.ExpandableDictionaryUtils
 import helium314.keyboard.latin.settings.Defaults
 import helium314.keyboard.latin.settings.Settings
+import helium314.keyboard.latin.settings.PersonalDefaults
 import helium314.keyboard.latin.utils.FoldableUtils
 import helium314.keyboard.latin.utils.LayoutUtilsCustom
 import helium314.keyboard.latin.utils.Log
@@ -26,6 +27,8 @@ class App : Application() {
         super.onCreate()
         app = this
         val ctx: Context = this
+        // The core test variant retains upstream language fixtures; the preset is tested separately.
+        if (BuildConfig.BUILD_TYPE != "runTests") PersonalDefaults.applyToNewInstall(prefs())
         DebugFlags.init(this) // needed by several other inits, so do it first
 
         val scope = CoroutineScope(Dispatchers.Default)

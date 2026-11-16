@@ -8,17 +8,64 @@ import helium314.keyboard.latin.common.isEmoji
 import java.lang.StringBuilder
 import java.util.ArrayList
 
-class HangulCombiner : Combiner {
+class HangulCombiner(
+    private val singleVowelTimeout: (() -> Int)? = null,
+    private val clock: () -> Long = { System.nanoTime() / 1_000_000 }
+) : Combiner {
 
     private val composingWord = StringBuilder()
 
     val history: MutableList<HangulSyllable> = mutableListOf()
     private val syllable: HangulSyllable? get() = history.lastOrNull()
 
+    private data class Snapshot(val word: String, val history: List<HangulSyllable>)
+    private data class Tap(val codePoint: Int, val time: Long, val before: Snapshot)
+    private var lastTap: Tap? = null
+    private var doubleTapUndo: Snapshot? = null
+
+    private fun snapshot() = Snapshot(composingWord.toString(), history.toList())
+
+    private fun restore(snapshot: Snapshot) {
+        composingWord.setLength(0)
+        composingWord.append(snapshot.word)
+        history.clear()
+        history.addAll(snapshot.history)
+    }
+
+    private fun singleVowelEvent(event: Event): Event {
+        doubleTapUndo = null
+        val timeout = singleVowelTimeout?.invoke() ?: 0
+        val combined = SINGLE_VOWEL_DOUBLE_TAPS[event.codePoint]
+        // Hardware repeats, restored text, gestures and popups must never become a double tap.
+        if (timeout <= 0 || combined == null || event.isFunctionalKeyEvent || event.isKeyRepeat
+            || event.isDead || event.isGesture || event.x < 0 || event.y < 0) {
+            lastTap = null
+            return event
+        }
+        val now = clock()
+        val previous = lastTap
+        if (previous != null && previous.codePoint == event.codePoint
+            && now - previous.time in 0L..timeout.coerceIn(200, 800).toLong()) {
+            doubleTapUndo = snapshot()
+            restore(previous.before)
+            lastTap = null
+            return Event.createSoftwareKeypressEvent(combined, event.keyCode, event.metaState, event.x, event.y, false)
+        }
+        lastTap = Tap(event.codePoint, now, snapshot())
+        return event
+    }
+
     override fun processEvent(previousEvents: ArrayList<Event>?, event: Event): Event {
-        if (event.keyCode == KeyCode.SHIFT || isEmoji(event.codePoint)) return event
+        if (singleVowelTimeout != null && event.keyCode == KeyCode.DELETE && doubleTapUndo != null) {
+            restore(doubleTapUndo!!)
+            doubleTapUndo = null
+            lastTap = null
+            return Event.createConsumedEvent(event)
+        }
+        val tapEvent = if (singleVowelTimeout == null) event else singleVowelEvent(event)
+        if (tapEvent.keyCode == KeyCode.SHIFT || isEmoji(tapEvent.codePoint)) return tapEvent
         // previously we only used the combiner if codePoint > 0x1100 or codePoint == -1, but looks here it's not necessary
-        val event = HangulEventDecoder.decodeSoftwareKeyEvent(event)
+        val event = HangulEventDecoder.decodeSoftwareKeyEvent(tapEvent)
         if (Character.isWhitespace(event.codePoint)) {
             val text = combiningStateFeedback
             reset()
@@ -187,6 +234,8 @@ class HangulCombiner : Combiner {
     override fun reset() {
         composingWord.setLength(0)
         history.clear()
+        lastTap = null
+        doubleTapUndo = null
     }
 
     sealed class HangulJamo {
@@ -280,6 +329,15 @@ class HangulCombiner : Combiner {
     }
 
     companion object {
+        private val SINGLE_VOWEL_DOUBLE_TAPS = mapOf(
+            'ㅏ'.code to 'ㅑ'.code, 'ㅓ'.code to 'ㅕ'.code,
+            'ㅗ'.code to 'ㅛ'.code, 'ㅜ'.code to 'ㅠ'.code,
+            'ㅐ'.code to 'ㅒ'.code, 'ㅔ'.code to 'ㅖ'.code,
+            'ㄱ'.code to 'ㄲ'.code, 'ㄷ'.code to 'ㄸ'.code,
+            'ㅂ'.code to 'ㅃ'.code, 'ㅅ'.code to 'ㅆ'.code,
+            'ㅈ'.code to 'ㅉ'.code
+        )
+
         val COMBINATION_TABLE_DUBEOLSIK = mapOf<Pair<Int, Int>, Int>(
                 0x1169 to 0x1161 to 0x116a,
                 0x1169 to 0x1162 to 0x116b,

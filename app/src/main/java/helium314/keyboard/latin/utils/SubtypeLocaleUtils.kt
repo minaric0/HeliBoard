@@ -180,7 +180,15 @@ object SubtypeLocaleUtils {
     }
 
     @JvmStatic
-    fun getCombiningRulesExtraValue(subtype: InputMethodSubtype): String? = subtype.getExtraValueOf(ExtraValue.COMBINING_RULES)
+    fun getCombiningRulesExtraValue(subtype: InputMethodSubtype): String? {
+        val rules = subtype.getExtraValueOf(ExtraValue.COMBINING_RULES)
+        // Layout changes retain subtype extras, so derive timed input from the actual layout.
+        return when {
+            subtype.mainLayoutName() == "korean_single_vowel" -> "hangul_single_vowel"
+            rules == "hangul_single_vowel" -> "hangul"
+            else -> rules
+        }
+    }
 
     // Special language code to represent "no language".
     const val NO_LANGUAGE = "zz"

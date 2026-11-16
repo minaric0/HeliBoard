@@ -148,7 +148,7 @@ class SuggestionStripView(context: Context, attrs: AttributeSet?, defStyle: Int)
         enabledToolKeyBackground.gradientRadius = resources.getDimensionPixelSize(R.dimen.config_suggestions_strip_height) / 2.1f
 
         val mToolbarMode = if (isGone) ToolbarMode.HIDDEN else Settings.getValues().mToolbarMode
-        if (mToolbarMode == ToolbarMode.TOOLBAR_KEYS) {
+        if (mToolbarMode == ToolbarMode.TOOLBAR_KEYS || mToolbarMode == ToolbarMode.EXPANDABLE && Settings.getValues().mAutoShowToolbar) {
             setToolbarVisibility(true)
         }
 

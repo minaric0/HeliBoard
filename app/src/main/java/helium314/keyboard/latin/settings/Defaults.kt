@@ -31,7 +31,7 @@ object Defaults {
         LayoutType.MAIN -> "qwerty"
         LayoutType.SYMBOLS -> "symbols"
         LayoutType.MORE_SYMBOLS -> "symbols_shifted"
-        LayoutType.FUNCTIONAL -> if (Settings.getInstance().isTablet) "functional_keys_tablet" else "functional_keys"
+        LayoutType.FUNCTIONAL -> if (Settings.getInstance().isTablet) "functional_keys_tablet" else "functional_keys_globe_at"
         LayoutType.NUMBER -> "number"
         LayoutType.NUMBER_ROW -> "number_row"
         LayoutType.NUMPAD -> "numpad"
@@ -121,6 +121,8 @@ object Defaults {
     const val PREF_VIBRATION_DURATION_SETTINGS = -1
     const val PREF_KEYPRESS_SOUND_VOLUME = -0.01f
     const val PREF_KEY_LONGPRESS_TIMEOUT = 300
+    const val PREF_KOREAN_SINGLE_VOWEL_DOUBLE_TAP = true
+    const val PREF_KOREAN_SINGLE_VOWEL_DOUBLE_TAP_TIMEOUT = 450
     const val PREF_ENABLE_EMOJI_ALT_PHYSICAL_KEY = true
     // supporting hardware keyboard still has a bunch of issues
     // crash https://github.com/HeliBorg/HeliBoard/issues/2047 (possibly fixed with b7cb95fc9da213c99d82e8833fb5f950f39d232e)
@@ -178,7 +180,7 @@ object Defaults {
     const val PREF_QUICK_PIN_TOOLBAR_KEYS = false
     val PREF_PINNED_TOOLBAR_KEYS = defaultPinnedToolbarPref
     val PREF_TOOLBAR_KEYS = defaultToolbarPref
-    const val PREF_AUTO_SHOW_TOOLBAR = false
+    const val PREF_AUTO_SHOW_TOOLBAR = true
     const val PREF_AUTO_HIDE_TOOLBAR = false
     val PREF_CLIPBOARD_TOOLBAR_KEYS = defaultClipboardToolbarPref
     const val PREF_ABC_AFTER_EMOJI = false

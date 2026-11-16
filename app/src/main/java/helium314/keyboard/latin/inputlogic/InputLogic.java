@@ -484,6 +484,14 @@ public final class InputLogic {
         if (GestureDataGatheringKt.useBackgroundGathering && mWordComposer.isComposingWord() && mWordComposer.isCursorFrontOrMiddleOfComposingWord())
             BackgroundGatheringCache.INSTANCE.onEditWord(mWordComposer.getTypedWord());
 
+        // Hangul feedback represents the active syllable at the end of a composition.
+        // After moving inside it, start a new composition at the actual editor caret.
+        if ("hangul_single_vowel".equals(mWordComposer.getCombiningSpec())
+                && mWordComposer.isComposingWord()
+                && mWordComposer.isCursorFrontOrMiddleOfComposingWord()) {
+            resetEntireInputState(mConnection.getExpectedSelectionStart(),
+                    mConnection.getExpectedSelectionEnd(), false);
+        }
         Event processedEvent = mWordComposer.processEvent(event);
         InputTransaction inputTransaction = new InputTransaction(settingsValues,
                 processedEvent, SystemClock.uptimeMillis(), mSpaceState,
