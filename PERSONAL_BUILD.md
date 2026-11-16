@@ -34,7 +34,7 @@ The main rows are:
 ## Android build
 
 - Package: `io.github.minaric0.heliboard` (can coexist with upstream).
-- Version: `4.3-beta2-danmoeum.1`, code `4302`.
+- Version: `4.3-beta2-danmoeum.3`, code `4304`.
 - Compile and target SDK: 37 (Android 17). Minimum API remains 21.
 - The personal release uses `-PpersonalAbis=arm64-v8a` for Samsung SM-A175N.
 - R8 release optimization remains enabled; the native dictionary library uses NDK r28.
@@ -54,3 +54,17 @@ and increase the version code for each release.
 The accompanying build report records the exact checks and their results. Physical Samsung
 One UI behavior must be assessed on the actual handset; a compiled APK or JVM test does not
 establish device compatibility by itself.
+
+## First unlock after reboot
+
+The `.2` release could repeatedly crash in the background startup dictionary scan when
+credential-protected storage could not be listed. The handset's 32 reports have the same
+stack, retraced with the matching release map to `ExpandableDictionaryUtils.initUpToDateDicts`.
+The `.3` release skips that optional scan while the Android user is locked and safely returns
+when storage cannot be listed after unlocking. It does not move private dictionaries into
+device-protected storage or change lock-screen authentication.
+
+Regression checks cover locked startup, unavailable storage, preservation of dictionary files,
+an unlocked scan after a locked attempt, and real application startup followed by password-field
+touch input with Robolectric's user and keyguard states locked. A physical SM-A175N reboot
+remains unverified; retain Samsung Keyboard as a fallback until that check is complete.

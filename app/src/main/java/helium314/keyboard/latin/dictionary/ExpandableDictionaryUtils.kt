@@ -2,6 +2,7 @@
 package helium314.keyboard.latin.dictionary
 
 import android.content.Context
+import helium314.keyboard.compat.isUserLocked
 import helium314.keyboard.latin.define.DebugFlags
 import helium314.keyboard.latin.dictionary.contacts.ContactsBinaryDictionary
 import helium314.keyboard.latin.dictionary.history.UserHistoryDictionary
@@ -15,9 +16,12 @@ object ExpandableDictionaryUtils {
 
     /** fill with dicts from file system, so we don't recreate on app start (misses changes that were made while different keyboard were active) */
     fun initUpToDateDicts(context: Context) {
-        val files = context.filesDir.listFiles {
+        // Personal dictionaries are credential protected. They are optional for the
+        // first-unlock keyboard and must not be inspected or cleaned up during Direct Boot.
+        if (isUserLocked(context)) return
+        val files = context.filesDir?.listFiles {
             it.isDirectory && it.name.endsWith(".dict") && !it.name.startsWith(UserHistoryDictionary.NAME)
-        }!!
+        } ?: return // unavailable storage must not terminate the input-method process
         val prefs = context.prefs() // SettingsValues not initialized at this point on app start
         if (!prefs.getBoolean(Settings.PREF_USE_CONTACTS, Defaults.PREF_USE_CONTACTS))
             files.forEach { if (it.name.startsWith(ContactsBinaryDictionary.NAME)) it.deleteRecursively() }
